@@ -1,0 +1,140 @@
+import { createFileRoute } from "@tanstack/react-router";
+import { TopBar } from "@/components/dashboard/TopBar";
+import { KpiCard, Panel } from "@/components/dashboard/Kpi";
+import { aiVsHuman, automationByWorkflow, humanCosts, aiCosts } from "@/lib/mock/data";
+import { useDashboardRole } from "@/context/DashboardRoleContext";
+import { workforceSectionVisible } from "@/lib/roleConfig";
+import { Bot, Users, Workflow, Zap } from "lucide-react";
+import { Bar, BarChart, CartesianGrid, Cell, Legend, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+
+export const Route = createFileRoute("/workforce")({ component: Workforce });
+const tooltipStyle = { background: "hsl(0 0% 8%)", border: "1px solid hsl(0 0% 20%)", borderRadius: 8, fontSize: 12 };
+const totalHuman = humanCosts.reduce((s, r) => s + r.monthly, 0);
+const totalAi = aiCosts.reduce((s, r) => s + r.monthly, 0);
+const totalHeadcount = humanCosts.reduce((s, r) => s + r.count, 0);
+const aiPct = aiVsHuman.find((x) => x.name === "AI / Assisted")?.value ?? 0;
+const humanPct = aiVsHuman.find((x) => x.name === "Human / Override")?.value ?? 0;
+
+function Workforce() {
+  const { roleKey } = useDashboardRole();
+  const vis = (s: Parameters<typeof workforceSectionVisible>[1]) => workforceSectionVisible(roleKey, s);
+
+  return (
+    <>
+      <TopBar title="Workforce & AI Operations" subtitle="Human + machine balance · fallback rate elevated in west" />
+      <div className="p-6 space-y-6">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          <KpiCard label="AI / assisted volume" value={`${aiPct}%`} delta={-3.2} deltaLabel="vs prior quarter" icon={Bot} accent="warning" />
+          <KpiCard label="Total headcount" value={String(totalHeadcount)} delta={-2.1} deltaLabel="net hires lag plan" icon={Users} accent="primary" />
+          <KpiCard label="AI cost / mo" value={`₹${totalAi.toFixed(1)} L`} delta={18.4} deltaLabel="usage growth" icon={Zap} accent="teal" />
+          <KpiCard label="Human cost / mo" value={`₹${totalHuman.toFixed(1)} L`} delta={-4.8} deltaLabel="OT + escalations" icon={Workflow} accent="warning" />
+        </div>
+
+        <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
+          <Panel title="AI vs human operational split" subtitle="Resolved volume share · not 'autonomy'">
+            <div className="h-72 relative">
+              <ResponsiveContainer>
+                <PieChart>
+                  <Pie data={aiVsHuman} dataKey="value" nameKey="name" innerRadius={70} outerRadius={100} paddingAngle={4}>
+                    <Cell fill="var(--chart-2)" />
+                    <Cell fill="var(--chart-1)" />
+                  </Pie>
+                  <Tooltip contentStyle={tooltipStyle} />
+                  <Legend wrapperStyle={{ fontSize: 11 }} iconType="circle" />
+                </PieChart>
+              </ResponsiveContainer>
+              <div className="absolute inset-0 grid place-items-center pointer-events-none -mt-6">
+                <div className="text-center">
+                  <div className="text-3xl font-bold text-teal">{aiPct}%</div>
+                  <div className="text-[10px] uppercase tracking-wider text-muted-foreground">AI / assisted</div>
+                  <div className="text-[10px] text-muted-foreground mt-1">{humanPct}% human / override</div>
+                </div>
+              </div>
+            </div>
+          </Panel>
+
+          <Panel title="Automation coverage by workflow" subtitle="AI vs human · % of volume · uneven by workflow" className="xl:col-span-2">
+            <div className="h-72">
+              <ResponsiveContainer>
+                <BarChart data={automationByWorkflow} layout="vertical">
+                  <CartesianGrid stroke="var(--border)" strokeDasharray="3 3" horizontal={false} />
+                  <XAxis type="number" stroke="var(--muted-foreground)" fontSize={11} />
+                  <YAxis type="category" dataKey="workflow" stroke="var(--muted-foreground)" fontSize={11} width={100} />
+                  <Tooltip contentStyle={tooltipStyle} />
+                  <Legend wrapperStyle={{ fontSize: 11 }} />
+                  <Bar dataKey="ai" stackId="a" fill="var(--chart-2)" radius={[0, 0, 0, 0]} />
+                  <Bar dataKey="human" stackId="a" fill="var(--chart-1)" radius={[0, 6, 6, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </Panel>
+        </div>
+
+        <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
+          <Panel title="Staffing hierarchy & cost" subtitle={`${totalHeadcount} FTEs · ₹${totalHuman.toFixed(1)}L / month`}>
+            <div className="h-72">
+              <ResponsiveContainer>
+                <BarChart data={humanCosts}>
+                  <CartesianGrid stroke="var(--border)" strokeDasharray="3 3" vertical={false} />
+                  <XAxis dataKey="role" stroke="var(--muted-foreground)" fontSize={10} interval={0} angle={-12} textAnchor="end" height={60} />
+                  <YAxis stroke="var(--muted-foreground)" fontSize={11} />
+                  <Tooltip contentStyle={tooltipStyle} />
+                  <Bar dataKey="monthly" fill="var(--chart-1)" radius={[6, 6, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </Panel>
+
+          <Panel title="AI subscription spend" subtitle={`6 active systems · ₹${totalAi.toFixed(1)}L / month`}>
+            <div className="space-y-2">
+              {aiCosts.map((r) => {
+                const pct = (r.monthly / totalAi) * 100;
+                return (
+                  <div key={r.tool} className="space-y-1">
+                    <div className="flex justify-between text-xs gap-2">
+                      <span className="font-medium truncate">{r.tool}</span>
+                      <span className="text-muted-foreground shrink-0 tabular-nums">
+                        ₹{r.monthly}L · {pct.toFixed(0)}%
+                      </span>
+                    </div>
+                    <div className="h-2 rounded bg-secondary overflow-hidden">
+                      <div className="h-full bg-gradient-to-r from-teal to-primary" style={{ width: `${pct}%` }} />
+                    </div>
+                    <div className="text-[11px] text-muted-foreground">{r.coverage}</div>
+                  </div>
+                );
+              })}
+            </div>
+          </Panel>
+        </div>
+
+        {vis("optimization") && (
+        <Panel title="Manpower optimization" subtitle="Copilot-style reallocations · validate with DRIs">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+            {[
+              {
+                t: "L1 support load-shedding",
+                body: "Deflection is uneven — Pune/Ahmedabad still spike human queues. Shift 4 FTEs to L2 for 90d and backfill L1 with contract bench instead of new AI seats.",
+              },
+              {
+                t: "Field engineering west",
+                body: "Utilization >100% in Pune cluster. Approve 6 contract FEs with spare-parts stipend; pair with dispatch playbook until OEM lead times normalize.",
+              },
+              {
+                t: "Onboarding verification pod",
+                body: "Hybrid verification reduces failed activations faster than another model release. Stand shared regional pod (BLR + remote) before pushing Indore launch.",
+              },
+            ].map((c) => (
+              <div key={c.t} className="rounded-lg border border-border p-4 bg-background/40">
+                <div className="text-[10px] uppercase tracking-wider text-primary">Recommendation</div>
+                <div className="text-sm font-semibold mt-1">{c.t}</div>
+                <div className="text-xs text-muted-foreground mt-2 leading-relaxed">{c.body}</div>
+              </div>
+            ))}
+          </div>
+        </Panel>
+        )}
+      </div>
+    </>
+  );
+}
