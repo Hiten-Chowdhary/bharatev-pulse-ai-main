@@ -3,7 +3,6 @@ import { Outlet, Link, createRootRouteWithContext, useRouter, HeadContent, Scrip
 import appCss from "../styles.css?url";
 import { Sidebar } from "@/components/dashboard/Sidebar";
 import { AiAssistant } from "@/components/dashboard/AiAssistant";
-import { DashboardRoleProvider } from "@/context/DashboardRoleContext";
 
 function NotFoundComponent() {
   return (
@@ -75,13 +74,11 @@ function RootComponent() {
   return (
     <QueryClientProvider client={queryClient}>
       <div className="min-h-screen flex bg-background text-foreground">
-        <DashboardRoleProvider>
-          <Sidebar />
-          <main className="flex-1 min-w-0">
-            <Outlet />
-          </main>
-          <AiAssistant />
-        </DashboardRoleProvider>
+        <Sidebar />
+        <main className="flex-1 min-w-0">
+          <Outlet />
+        </main>
+        <AiAssistant />
       </div>
     </QueryClientProvider>
   );
