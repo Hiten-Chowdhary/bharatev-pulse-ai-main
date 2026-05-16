@@ -1,42 +1,73 @@
 import { useState } from "react";
 import { Sparkles, X, Send, Bot, User2 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useDashboardRole } from "@/context/DashboardRoleContext";
+import { franchises, insights, alerts as mockAlerts, aiCosts, automationByWorkflow } from "@/lib/mock/data";
 
 type Msg = { role: "user" | "ai"; text: string };
 
 const suggestions = [
-  "Which franchise is underperforming?",
-  "Show operational savings from AI workflows",
-  "Recommend expansion cities",
-  "Why is Pune franchise profitability declining?",
-  "Show highest staffing cost locations",
+  "Show highest operational risk regions",
+  "Summarize onboarding bottlenecks",
+  "Which cities are underperforming?",
+  "Where should staffing be increased?",
+  "What operational risks exist this week?",
 ];
 
-const replies: Record<string, string> = {
-  "Which franchise is underperforming?":
-    "Jaipur is the lowest performer — 3 consecutive loss-making months, infra readiness 41%, and support TAT 2.3× network avg. Recommend staffing optimization (-2 ops), localized WhatsApp campaigns, and AI takeover of L1 support.",
-  "Show operational savings from AI workflows":
-    "AI workflows saved ₹3.8 Cr over the last 12 months — 57% TAT reduction in onboarding, 88% L1 support deflection, and 92% billing automation. Net AI ROI: 4.6×.",
-  "Recommend expansion cities":
-    "Top 3 expansion candidates: Coimbatore (adoption 68 / infra 52), Indore (64 / 49), Lucknow (59 / 44). Coimbatore is activation-ready this quarter using a shared south-zone ops pod.",
-  "Why is Pune franchise profitability declining?":
-    "Pune margin dropped 4.1pp this quarter. Primary driver: support escalations +14% MoM with field engineer dispatch bottleneck. Adoption remains strong (84). Add 6 FEs in west zone and route L2 tickets through AI triage.",
-  "Show highest staffing cost locations":
-    "Top staffing cost centers: Delhi NCR (₹38L/mo), Mumbai (₹34L/mo), Bengaluru (₹31L/mo). Mumbai shows highest cost-per-ticket — opportunity for AI-assisted L1 reduction worth ~₹6L/mo.",
-};
+function roleAwareOpening(roleWelcome: string, profileName: string) {
+  return `${roleWelcome} — Hi ${profileName}, I'm your BharatEV Ops Copilot. Ask about city health, staffing, AI savings, or expansion.`;
+}
 
 export function AiAssistant() {
+  const { profile, welcomeLine, roleKey } = useDashboardRole();
   const [open, setOpen] = useState(false);
   const [input, setInput] = useState("");
   const [msgs, setMsgs] = useState<Msg[]>([
-    { role: "ai", text: "Hi Arjun — I'm your BharatEV operations copilot. Ask about franchise performance, staffing, AI savings, or expansion." },
+    { role: "ai", text: roleAwareOpening(welcomeLine, profile.name) },
   ]);
 
   function send(text: string) {
     if (!text.trim()) return;
-    const reply = replies[text] ??
-      "Analyzing operational signals across 9 active franchises… Based on current trends, I'd recommend reviewing the AI Insights tab for a structured breakdown.";
-    setMsgs((m) => [...m, { role: "user", text }, { role: "ai", text: reply }]);
+    setMsgs((m) => [...m, { role: "user", text }]);
+
+    // simple rule-based responder using mock data
+    const q = text.toLowerCase();
+
+    let reply = "Analyzing operational signals across franchises… please wait a moment.";
+
+    // city-specific
+    const city = franchises.find((f) => q.includes(f.city.toLowerCase()));
+    if (city) {
+      const roleNote = roleKey === "cto" ? "Check AI fallback for onboarding models." : roleKey === "ops_head" ? "Prioritise dispatch and spare parts." : "Assess expansion readiness and P&L impact.";
+      reply = `${city.city}: status ${city.status}. Health ${city.health || "—"}. ${city.alert ?? "No critical alerts."} Recommended actions: ${city.status === 'Onboarding' ? 'Expedite charging infra procurement and add 2 field engineers.' : 'Review staffing and routing; consider AI-assisted L1 for ticket deflection.'} ${roleNote}`;
+    } else if (q.includes("onboarding")) {
+      // aggregate onboarding insight
+      reply = roleKey === "cto" ?
+        "Onboarding pipeline: AI validation failing in 3% of cases — engineering to review model thresholds. Key blockers: vision KYC pipeline." :
+        "Onboarding TAT has dropped ~57% where AI automation was applied. Key blockers remain: charging infra readiness and KYC doc verification. Recommend concentrated field pods and prioritized infra checklist for delayed cities (Jaipur, Kochi).";
+    } else if (q.includes("risk") || q.includes("underperform")) {
+      // highest risk
+      const danger = mockAlerts.filter((a) => a.level === "danger" || a.level === "warning").map((a) => a.text).slice(0, 3).join("; ");
+      reply = roleKey === "ceo" ?
+        `Top operational signals: ${danger}. Suggested immediate actions: assign leadership owners and evaluate strategic funding for recovery.` :
+        `Top operational signals: ${danger}. Suggested immediate actions: assign regional ops lead to Jaipur recovery plan, add 6 FEs in west cluster, and allocate temporary AI triage capacity to Pune.`;
+    } else if (q.includes("staff")) {
+      reply = roleKey === "regional_ops" ?
+        "Region staffing gaps: Pune and Jaipur need immediate hires; consider short-term contractors for 8 weeks." :
+        "Staffing hotspots: Delhi NCR, Mumbai, Bengaluru. Suggest rebalancing 8 field engineers from low-utilization Tier-2 pilots and launching short-term hiring in Mumbai to reduce cost-per-ticket.";
+    } else if (q.includes("expansion")) {
+      reply = "Expansion-ready cities: Coimbatore, Indore, Lucknow. Recommend Q1 activation with shared regional ops pod and conditional funding tied to infra readiness milestones.";
+    } else if (q.includes("ai") || q.includes("savings") || q.includes("workflow")) {
+      reply = roleKey === "cto" ?
+        "AI workflows: 88% L1 deflection and 92% billing automation. Fallback rate 4.2% — recommend model retraining and infra scaling before wider rollout." :
+        "AI workflows have delivered ~₹3.8 Cr annualized savings: 88% L1 deflection, 92% billing automation, and onboarding TAT down from 21 → 9 days. Monitor model fallback rates and escalate engineering fixes for onboarding pipelines.";
+    } else {
+      // generic fallback: synthesize top insights
+      const top = insights.slice(0, 2).map((i) => `${i.tag}: ${i.title}`).join("; ");
+      reply = `I looked across the network and surfaced: ${top}. For actionable steps, ask for staffing, onboarding, or city-specific summaries.`;
+    }
+
+    setMsgs((m) => [...m, { role: "ai", text: reply }]);
     setInput("");
   }
 
@@ -53,7 +84,7 @@ export function AiAssistant() {
         </button>
       )}
       {open && (
-        <div className="fixed bottom-6 right-6 z-40 w-[380px] max-w-[calc(100vw-2rem)] h-[560px] max-h-[calc(100vh-3rem)] rounded-2xl border border-border bg-card shadow-2xl flex flex-col overflow-hidden animate-in fade-in slide-in-from-bottom-4">
+        <div className="fixed bottom-6 right-6 z-40 w-[420px] max-w-[calc(100vw-2rem)] h-[600px] max-h-[calc(100vh-3rem)] rounded-2xl border border-border bg-card shadow-2xl flex flex-col overflow-hidden animate-in fade-in slide-in-from-bottom-4">
           <div className="flex items-center gap-3 px-4 py-3 border-b border-border bg-gradient-to-r from-primary/10 to-teal/10">
             <div className="h-8 w-8 rounded-lg bg-primary/20 grid place-items-center">
               <Bot className="h-4 w-4 text-primary" />
@@ -61,7 +92,7 @@ export function AiAssistant() {
             <div className="flex-1">
               <div className="text-sm font-semibold">BharatEV Ops Copilot</div>
               <div className="text-[10px] text-muted-foreground flex items-center gap-1">
-                <span className="h-1.5 w-1.5 rounded-full bg-success" /> Online · GPT-class reasoning
+                <span className="h-1.5 w-1.5 rounded-full bg-success" /> Online · Operational reasoning
               </div>
             </div>
             <button onClick={() => setOpen(false)} className="h-7 w-7 grid place-items-center rounded-md hover:bg-secondary">
@@ -83,7 +114,7 @@ export function AiAssistant() {
             ))}
           </div>
           <div className="px-4 pb-2 flex flex-wrap gap-1.5">
-            {suggestions.slice(0, 3).map((s) => (
+            {suggestions.map((s) => (
               <button key={s} onClick={() => send(s)}
                 className="text-[11px] px-2 py-1 rounded-full border border-border bg-card hover:border-primary/40 hover:text-primary transition">
                 {s}

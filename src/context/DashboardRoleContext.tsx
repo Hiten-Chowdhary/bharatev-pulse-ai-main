@@ -2,6 +2,7 @@ import { createContext, useCallback, useContext, useMemo, useState, type ReactNo
 import {
   defaultProfileId,
   executiveProfiles,
+  type RoleKey,
   type ExecutiveProfile,
   welcomeForRole,
   roleReadingHint,
@@ -13,12 +14,15 @@ type DashboardRoleContextValue = {
   roleKey: RoleKey;
   welcomeLine: string;
   readingHint: string;
+  searchQuery: string;
+  setSearchQuery: (q: string) => void;
 };
 
 const DashboardRoleContext = createContext<DashboardRoleContextValue | null>(null);
 
 export function DashboardRoleProvider({ children }: { children: ReactNode }) {
   const [profileId, setProfileIdState] = useState(defaultProfileId);
+  const [searchQuery, setSearchQuery] = useState("");
 
   const setProfileId = useCallback((id: string) => {
     if (executiveProfiles.some((p) => p.id === id)) setProfileIdState(id);
@@ -33,8 +37,10 @@ export function DashboardRoleProvider({ children }: { children: ReactNode }) {
       roleKey,
       welcomeLine: welcomeForRole(roleKey),
       readingHint: roleReadingHint(roleKey),
+      searchQuery,
+      setSearchQuery,
     };
-  }, [profileId, setProfileId]);
+  }, [profileId, searchQuery, setProfileId]);
 
   return <DashboardRoleContext.Provider value={value}>{children}</DashboardRoleContext.Provider>;
 }
@@ -47,6 +53,8 @@ const fallbackValue: DashboardRoleContextValue = (() => {
     roleKey: profile.roleKey,
     welcomeLine: welcomeForRole(profile.roleKey),
     readingHint: roleReadingHint(profile.roleKey),
+    searchQuery: "",
+    setSearchQuery: () => {},
   };
 })();
 
