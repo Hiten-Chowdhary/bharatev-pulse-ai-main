@@ -14,8 +14,8 @@ This project was built with a focus on:
 
 # Live Demo
 
-Temporary Live Review Link:  
-https://busload-slab-dose.ngrok-free.dev/operations
+Live Review Link:  
+https://bharatevoperations.netlify.app/
 
 ---
 
