@@ -1,7 +1,6 @@
 /**
  * Role-based dashboard personalization for BharatEV Ops Intelligence.
- * Public names: Scale100x co-founders (Jatin Solanki, Vivek Gupta) and members
- * surfaced in public search (e.g. marketing, IR); ops/CTO seats are explicit demos.
+ * Public showcase builds use generic executive labels for the profile selector.
  */
 
 export type RoleKey = "ceo" | "cofounder" | "business_head" | "ops_head" | "regional_ops" | "cto";
@@ -19,49 +18,49 @@ export type ExecutiveProfile = {
 export const executiveProfiles: ExecutiveProfile[] = [
   {
     id: "vivek-gupta",
-    name: "Vivek Gupta",
-    title: "Chief Executive",
-    initials: "VG",
+    name: "CEO",
+    title: "Executive Leadership",
+    initials: "CE",
     roleKey: "ceo",
     attribution: "Co-founder, Scale100x (public)",
   },
   {
     id: "jatin-solanki",
-    name: "Jatin Solanki",
-    title: "Co-Founder",
-    initials: "JS",
+    name: "Executive Leadership",
+    title: "Strategic Oversight",
+    initials: "EL",
     roleKey: "cofounder",
     attribution: "Co-founder, Scale100x (public)",
   },
   {
     id: "pradnya-kaddi",
-    name: "Pradnya Kaddi",
-    title: "Business & growth",
-    initials: "PK",
+    name: "Business Lead",
+    title: "Growth & pipeline",
+    initials: "BL",
     roleKey: "business_head",
     attribution: "Marketing leadership, Scale100x (public profile)",
   },
   {
     id: "yash-dhruv",
-    name: "Yash Dhruv",
-    title: "Investor relations & rollout",
-    initials: "YD",
+    name: "Regional Operations",
+    title: "Rollout & readiness",
+    initials: "RO",
     roleKey: "regional_ops",
     attribution: "Capital & partnerships, Scale100x (public profile)",
   },
   {
     id: "ops-command-demo",
-    name: "Operations command",
+    name: "Operations Head",
     title: "Fleet & deployment (demo seat)",
-    initials: "OC",
+    initials: "OH",
     roleKey: "ops_head",
     attribution: "Not a public individual — shared ops console",
   },
   {
     id: "cto-ai-demo",
-    name: "AI & platform",
-    title: "CTO / automation (demo seat)",
-    initials: "AI",
+    name: "CTO",
+    title: "AI Systems Lead (demo seat)",
+    initials: "CT",
     roleKey: "cto",
     attribution: "Not a public individual — engineering oversight view",
   },
@@ -72,10 +71,14 @@ export const defaultProfileId = "vivek-gupta";
 export function welcomeForRole(role: RoleKey): string {
   const m: Record<RoleKey, string> = {
     ceo: "3 expansion risks need review today — Jaipur dependency, west dispatch, and DISCOM queue.",
-    cofounder: "Network is growing with uneven execution — prioritize Jaipur recovery before Indore gate.",
-    business_head: "Pipeline has 3 cities ready on paper but 2 are dependency-blocked; align GTM with ops reality.",
-    ops_head: "Support backlog is up ~12% in the west cluster; dispatch and spare parts are the binding constraints.",
-    regional_ops: "City rollout view: focus on onboarding slips and regulatory delays before pushing net-new signings.",
+    cofounder:
+      "Network is growing with uneven execution — prioritize Jaipur recovery before Indore gate.",
+    business_head:
+      "Pipeline has 3 cities ready on paper but 2 are dependency-blocked; align GTM with ops reality.",
+    ops_head:
+      "Support backlog is up ~12% in the west cluster; dispatch and spare parts are the binding constraints.",
+    regional_ops:
+      "City rollout view: focus on onboarding slips and regulatory delays before pushing net-new signings.",
     cto: "AI fallback rate crossed internal threshold on onboarding workflows — tighten review queue before scaling automation.",
   };
   return m[role];
@@ -137,11 +140,18 @@ export function financialSectionVisible(
   if (role === "ops_head" && section === "pl_chart") return false;
   if (role === "ops_head" && section === "franchise_table") return false;
   if (role === "business_head" && section === "staffing_detail") return false;
-  if (role === "cto" && (section === "investor_kpis" || section === "pl_chart" || section === "franchise_table")) return false;
+  if (
+    role === "cto" &&
+    (section === "investor_kpis" || section === "pl_chart" || section === "franchise_table")
+  )
+    return false;
   return true;
 }
 
-export function workforceSectionVisible(role: RoleKey, section: "charts" | "optimization"): boolean {
+export function workforceSectionVisible(
+  role: RoleKey,
+  section: "charts" | "optimization",
+): boolean {
   if (role === "business_head" && section === "optimization") return false;
   if (role === "business_head") return section === "charts";
   return true;
