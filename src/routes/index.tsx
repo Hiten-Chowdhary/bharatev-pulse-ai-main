@@ -78,8 +78,7 @@ function renderAreaChart(chart: CommandCenterView["performanceChart"], prefix: s
         />
         <YAxis stroke="var(--muted-foreground)" fontSize={11} tickLine={false} axisLine={false} />
         <Tooltip
-          content={<ChartTooltip total={undefined} />}
-          formatter={(value: string | number) => formatChartValue(Number(value), chart.unit)}
+          content={<ChartTooltip valueFormatter={(value) => formatChartValue(value, chart.unit)} />}
         />
         <Legend wrapperStyle={{ fontSize: 11 }} iconType="circle" />
         {chart.series.map((series) => {
@@ -130,8 +129,7 @@ function renderPriorityChart(chart: CommandCenterView["priorityChart"]) {
         />
         <YAxis stroke="var(--muted-foreground)" fontSize={11} tickLine={false} axisLine={false} />
         <Tooltip
-          content={<ChartTooltip total={undefined} />}
-          formatter={(value: string | number) => formatChartValue(Number(value), chart.unit)}
+          content={<ChartTooltip valueFormatter={(value) => formatChartValue(value, chart.unit)} />}
         />
         <Legend wrapperStyle={{ fontSize: 11 }} iconType="circle" />
         {chart.series.map((series) => {
@@ -184,8 +182,13 @@ function renderMixChart(chart: CommandCenterView["mixChart"]) {
           ))}
         </Pie>
         <Tooltip
-          content={<ChartTooltip total={total} />}
-          formatter={(value: string | number) => formatChartValue(Number(value), chart.unit)}
+          content={
+            <ChartTooltip
+              total={total}
+              showPercent={false}
+              valueFormatter={(value) => formatChartValue(value, chart.unit)}
+            />
+          }
         />
         <Legend wrapperStyle={{ fontSize: 11 }} iconType="circle" />
       </PieChart>

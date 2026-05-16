@@ -1,24 +1,19 @@
 import type { ReactNode } from "react";
-import type { ExecutiveInsight } from "@/lib/mock/data";
 import {
   alerts,
+  aiCosts,
   automationByWorkflow,
-  expansionCandidates,
-  failureSignals,
-  financialIntelligence,
+  costBreakdown,
   franchises,
   humanCosts,
   insights,
-  predictiveRisks,
+  revenueTrend,
 } from "@/lib/mock/data";
 
 export type SearchHitType =
   | "franchise"
   | "insight"
   | "alert"
-  | "failure_metric"
-  | "expansion"
-  | "predictive_risk"
   | "workflow"
   | "staffing"
   | "financial";
@@ -74,16 +69,17 @@ function score(hay: string, q: string): number {
 export function searchDashboard(query: string): SearchHit[] {
   const q = query.trim();
   if (!q) return [];
+
   const hits: SearchHit[] = [];
 
   for (const f of franchises) {
-    const hay = `${f.city} ${f.state} ${f.status} ${f.alert ?? ""} ${f.dependencyAlert ?? ""} ${f.staffingGap ?? ""} onboarding delay slip support backlog franchise`;
+    const hay = `${f.city} ${f.state} ${f.status} ${f.alert ?? ""} franchise operations rollout`;
     if (matches(hay, q) || fuzzy(hay, q)) {
       hits.push({
         id: `fr-${f.city}`,
         type: "franchise",
         title: `${f.city} (${f.state})`,
-        description: [f.status, f.alert, f.dependencyAlert].filter(Boolean).join(" · ") || "Franchise record",
+        description: [f.status, f.alert].filter(Boolean).join(" - ") || "Franchise record",
         to: "/operations",
         search: { highlight: f.city },
         haystack: hay,
@@ -91,14 +87,14 @@ export function searchDashboard(query: string): SearchHit[] {
     }
   }
 
-  insights.forEach((it: ExecutiveInsight, i: number) => {
-    const hay = `${it.title} ${it.body} ${it.tag} ${it.actions.join(" ")} ${(it.affectedCities ?? []).join(" ")} ${it.category}`;
+  insights.forEach((it, i) => {
+    const hay = `${it.title} ${it.body} ${it.tag}`;
     if (matches(hay, q) || fuzzy(hay, q)) {
       hits.push({
         id: `in-${i}`,
         type: "insight",
         title: it.title,
-        description: `${it.tag} · ${it.shortRecommendation ?? `${it.body.slice(0, 110)}…`}`,
+        description: `${it.tag} - ${it.body.slice(0, 110)}`,
         to: "/insights",
         search: { insight: String(i) },
         haystack: hay,
@@ -119,47 +115,6 @@ export function searchDashboard(query: string): SearchHit[] {
     }
   });
 
-  failureSignals.forEach((f, i) => {
-    const hay = `${f.label} ${f.detail} ${f.value}${f.suffix} support backlog onboarding ai fallback`;
-    if (matches(hay, q) || fuzzy(hay, q)) {
-      hits.push({
-        id: `fail-${i}`,
-        type: "failure_metric",
-        title: f.label,
-        description: `${f.value}${f.suffix} — ${f.detail}`,
-        to: "/",
-        haystack: hay,
-      });
-    }
-  });
-
-  predictiveRisks.forEach((t, i) => {
-    if (matches(t, q) || fuzzy(t, q)) {
-      hits.push({
-        id: `risk-${i}`,
-        type: "predictive_risk",
-        title: "Forecast risk",
-        description: t,
-        to: "/insights",
-        haystack: t,
-      });
-    }
-  });
-
-  expansionCandidates.forEach((x) => {
-    const hay = `${x.c} expansion city pipeline ${x.why}`;
-    if (matches(hay, q) || fuzzy(hay, q)) {
-      hits.push({
-        id: `ex-${x.c}`,
-        type: "expansion",
-        title: x.c,
-        description: x.why,
-        to: "/insights",
-        haystack: hay,
-      });
-    }
-  });
-
   automationByWorkflow.forEach((w) => {
     const hay = `${w.workflow} automation ai human fallback dispatch onboarding`;
     if (matches(hay, q) || fuzzy(hay, q)) {
@@ -167,7 +122,7 @@ export function searchDashboard(query: string): SearchHit[] {
         id: `wf-${w.workflow}`,
         type: "workflow",
         title: w.workflow,
-        description: `AI ${w.ai}% · human ${w.human}%`,
+        description: `AI ${w.ai}% - human ${w.human}%`,
         to: "/workforce",
         haystack: hay,
       });
@@ -181,23 +136,50 @@ export function searchDashboard(query: string): SearchHit[] {
         id: `st-${r.role}`,
         type: "staffing",
         title: r.role,
-        description: `${r.count} people · ₹${r.monthly}L / mo`,
+        description: `${r.count} people - Rs.${r.monthly}L / mo`,
         to: "/workforce",
         haystack: hay,
       });
     }
   });
 
-  const fi = financialIntelligence;
-  const fiHay = `financial ${fi.costLeakageNote} ${fi.highBurnZones} margin volatility escalation ${fi.aiVsManpowerDeltaNote}`;
-  if (matches(fiHay, q) || fuzzy(fiHay, q)) {
+  aiCosts.forEach((tool) => {
+    const hay = `${tool.tool} ${tool.coverage} ai tooling support automation`;
+    if (matches(hay, q) || fuzzy(hay, q)) {
+      hits.push({
+        id: `tool-${tool.tool}`,
+        type: "financial",
+        title: tool.tool,
+        description: `${tool.coverage} - Rs.${tool.monthly}L / mo`,
+        to: "/financial",
+        haystack: hay,
+      });
+    }
+  });
+
+  const revenueHay = revenueTrend
+    .map((row) => `${row.m} revenue ${row.revenue} ebitda ${row.ebitda} target ${row.target}`)
+    .join(" ");
+  if (matches(revenueHay, q) || fuzzy(revenueHay, q)) {
     hits.push({
       id: "fi-summary",
       type: "financial",
       title: "Execution-linked finance",
-      description: `Leakage ₹${fi.costLeakageLakh}L · high-burn: ${fi.highBurnZones}`,
+      description: "Monthly revenue, EBITDA, and plan tracking",
       to: "/financial",
-      haystack: fiHay,
+      haystack: revenueHay,
+    });
+  }
+
+  const costHay = costBreakdown.map((row) => `${row.name} ${row.value}`).join(" ");
+  if (matches(costHay, q) || fuzzy(costHay, q)) {
+    hits.push({
+      id: "cost-breakdown",
+      type: "financial",
+      title: "Cost breakdown",
+      description: "Human ops, AI tooling, infrastructure, marketing, and G&A",
+      to: "/financial",
+      haystack: costHay,
     });
   }
 
@@ -205,12 +187,13 @@ export function searchDashboard(query: string): SearchHit[] {
 
   const seen = new Set<string>();
   const dedup: SearchHit[] = [];
-  for (const h of hits) {
-    const k = `${h.type}-${h.title}`;
-    if (seen.has(k)) continue;
-    seen.add(k);
-    dedup.push(h);
+  for (const hit of hits) {
+    const key = `${hit.type}-${hit.title}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    dedup.push(hit);
   }
+
   return dedup.slice(0, 24);
 }
 
@@ -227,7 +210,9 @@ export function highlightText(text: string, query: string): ReactNode {
     return (
       <>
         {text.slice(0, lo)}
-        <mark className="bg-primary/25 text-foreground rounded px-0.5">{text.slice(lo, lo + w.length)}</mark>
+        <mark className="rounded bg-primary/25 px-0.5 text-foreground">
+          {text.slice(lo, lo + w.length)}
+        </mark>
         {text.slice(lo + w.length)}
       </>
     );
@@ -235,7 +220,9 @@ export function highlightText(text: string, query: string): ReactNode {
   return (
     <>
       {text.slice(0, idx)}
-      <mark className="bg-primary/25 text-foreground rounded px-0.5">{text.slice(idx, idx + q.length)}</mark>
+      <mark className="rounded bg-primary/25 px-0.5 text-foreground">
+        {text.slice(idx, idx + q.length)}
+      </mark>
       {text.slice(idx + q.length)}
     </>
   );
