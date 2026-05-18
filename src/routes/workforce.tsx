@@ -29,7 +29,7 @@ function formatPercent(value: number) {
 }
 
 function formatLakh(value: number) {
-  return `Rs.${Number.isInteger(value) ? value : value.toFixed(1)} L`;
+  return `₹${Number.isInteger(value) ? value : value.toFixed(1)} L`;
 }
 
 function Workforce() {
@@ -44,14 +44,14 @@ function Workforce() {
           <KpiCard label="AI Workflow Coverage" value="76%" delta={8.9} icon={Bot} accent="teal" />
           <KpiCard
             label="Total Headcount"
-            value={String(totalHeadcount)}
+            value={totalHeadcount.toLocaleString("en-IN")}
             delta={4.6}
             icon={Users}
             accent="primary"
           />
           <KpiCard
             label="AI Cost / mo"
-            value={`â‚¹${totalAi.toFixed(1)} L`}
+            value={formatLakh(totalAi)}
             delta={22.1}
             deltaLabel="scaling up"
             icon={Zap}
@@ -59,7 +59,7 @@ function Workforce() {
           />
           <KpiCard
             label="Human Cost / mo"
-            value={`â‚¹${totalHuman.toFixed(1)} L`}
+            value={formatLakh(totalHuman)}
             delta={-3.2}
             deltaLabel="optimization"
             icon={Workflow}
@@ -142,7 +142,7 @@ function Workforce() {
         <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
           <Panel
             title="Staffing Hierarchy & Cost"
-            subtitle={`281 FTEs · â‚¹${totalHuman.toFixed(1)}L / month`}
+            subtitle={`281 FTEs · ${formatLakh(totalHuman)} / month`}
           >
             <div className="h-72">
               <ResponsiveContainer>
@@ -174,7 +174,7 @@ function Workforce() {
 
           <Panel
             title="AI Subscription Spend"
-            subtitle={`6 active systems · â‚¹${totalAi.toFixed(1)}L / month`}
+            subtitle={`6 active systems · ${formatLakh(totalAi)} / month`}
           >
             <div className="space-y-2">
               {aiCosts.map((r) => {
@@ -184,7 +184,7 @@ function Workforce() {
                     <div className="flex justify-between text-xs">
                       <span className="font-medium">{r.tool}</span>
                       <span className="text-muted-foreground">
-                        â‚¹{r.monthly}L · {pct.toFixed(0)}%
+                        {formatLakh(r.monthly)} · {pct.toFixed(0)}%
                       </span>
                     </div>
                     <div className="h-2 rounded bg-secondary overflow-hidden">
@@ -206,7 +206,8 @@ function Workforce() {
             {[
               {
                 t: "L1 Support",
-                body: "AI deflection at 88% â€” reallocate 6 support FTEs to L2 specialization. Net cost saving: â‚¹4.2 L/mo.",
+                body:
+                  "AI deflection at 88% — reallocate 6 support FTEs to L2 specialization. Net cost saving: ₹4.2 L/mo.",
               },
               {
                 t: "Field Engineering",
